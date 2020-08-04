@@ -1,0 +1,19 @@
+{
+    "name": "vveb/configurator",
+    "description": "Config files build tool",
+    "require": {
+        "symfony/console": "~5.1.0",
+        "symfony/filesystem": "~5.1.0"
+    },
+    "authors": [
+        {
+            "name": "Bogutsky Yaroslav",
+            "email": "y.bogutsky@vveb.pro"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
