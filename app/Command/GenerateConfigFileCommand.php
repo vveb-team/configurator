@@ -190,7 +190,9 @@ class GenerateConfigFileCommand extends Command
 
         $variable = trim($variable);
 
-        foreach (array_keys($this->configsData) as $index => $configData) {
+        foreach (array_keys($this->configsData) as $index) {
+            $configData = $this->configsData[$index];
+
             if (!is_array($configData)) {
                 continue;
             }
