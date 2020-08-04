@@ -207,7 +207,7 @@ class GenerateConfigFileCommand extends Command
             }
 
             if (key($configData) === $variable) {
-                $this->configsData[$index][$variable] = $value;
+                $this->configsData[$index][$variable] = $this->trimValue($value);
 
                 return;
             }
@@ -224,7 +224,17 @@ class GenerateConfigFileCommand extends Command
      */
     private function makeConfigItem(string $variable, string $value): array
     {
-        return [trim($variable) => trim(trim($value), "\"'")];
+        return [trim($variable) => $this->trimValue($value)];
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return string
+     */
+    private function trimValue(string $value): string
+    {
+        return trim(trim($value), "\"'");
     }
 
     /**
