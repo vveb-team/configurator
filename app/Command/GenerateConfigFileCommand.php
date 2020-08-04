@@ -111,6 +111,12 @@ class GenerateConfigFileCommand extends Command
             throw new InvalidArgumentException('At least one config file or config variable should be specified');
         }
 
+        $targetFile = $this->getTargetFile();
+
+        if ($this->filesystem->exists($targetFile)) {
+            $this->parseFile($targetFile);
+        }
+
         foreach ($files as $file) {
             $this->parseFile($file);
         }
@@ -121,6 +127,8 @@ class GenerateConfigFileCommand extends Command
 
         $this->writeTargetFile();
 
+        $this->output->writeln('Config file has been generated');
+
         return Command::SUCCESS;
     }
 
@@ -128,17 +136,13 @@ class GenerateConfigFileCommand extends Command
      * @param string $path
      *
      * @return string
+     *
+     * @throws Throwable
      */
     private function getPath(string $path): string
     {
-        $originalPath = $path;
-
-        if ($this->filesystem->exists($path)) {
-            return $path;
-        }
-
-        if (!$this->filesystem->exists($path)) {
-            throw new InvalidArgumentException(sprintf('File "%s" is not exist', $originalPath));
+        if (!$this->filesystem->isAbsolutePath($path)) {
+            $path = getcwd() . DIRECTORY_SEPARATOR . $path;
         }
 
         return $path;
@@ -151,7 +155,12 @@ class GenerateConfigFileCommand extends Command
      */
     private function parseFile(string $path): void
     {
+        $originalPath = $path;
         $path = $this->getPath($path);
+
+        if (!$this->filesystem->exists($path)) {
+            throw new InvalidArgumentException(sprintf('File "%s" is not exist', $originalPath));
+        }
 
         $fileData = explode(PHP_EOL, file_get_contents($path));
         $isFirstFile = false;
@@ -218,6 +227,9 @@ class GenerateConfigFileCommand extends Command
         return [trim($variable) => trim(trim($value), "\"'")];
     }
 
+    /**
+     * @throws Throwable
+     */
     private function writeTargetFile(): void
     {
         foreach (array_keys($this->configsData) as $index) {
@@ -239,7 +251,19 @@ class GenerateConfigFileCommand extends Command
             }
         }
 
-        $path = $this->input->getArgument(self::ARGUMENT_TARGET_FILE);
-        $this->filesystem->dumpFile($path, implode(PHP_EOL, $this->configsData));
+        $this->filesystem->dumpFile(
+            $this->getTargetFile(),
+            implode(PHP_EOL, $this->configsData)
+        );
+    }
+
+    /**
+     * @return string
+     *
+     * @throws
+     */
+    private function getTargetFile(): string
+    {
+        return $this->getPath($this->input->getArgument(self::ARGUMENT_TARGET_FILE));
     }
 }

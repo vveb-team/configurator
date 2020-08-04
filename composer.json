@@ -3,7 +3,8 @@
     "description": "Config files build tool",
     "require": {
         "symfony/console": "~5.1.0",
-        "symfony/filesystem": "~5.1.0"
+        "symfony/filesystem": "~5.1.0",
+        "symfony/finder": "~5.1.0"
     },
     "authors": [
         {
