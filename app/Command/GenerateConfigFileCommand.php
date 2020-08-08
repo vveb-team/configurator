@@ -19,6 +19,7 @@ class GenerateConfigFileCommand extends Command
     private const OPTION_CONFIG_FILE = 'file';
     private const OPTION_CONFIG_VARIABLE = 'var';
     private const OPTION_CONFIG_VALUE = 'val';
+    private const OPTION_TARGET_VARIABLES_ONLY = 'target-variables-only';
 
     /**
      * @var InputInterface
@@ -39,6 +40,11 @@ class GenerateConfigFileCommand extends Command
      * @var array|null
      */
     private $configsData;
+
+    /**
+     * @var bool
+     */
+    private $keepTargetVariablesOnly = false;
 
     /**
      * @inheritDoc
@@ -76,6 +82,13 @@ class GenerateConfigFileCommand extends Command
             'Config value',
             []
         );
+
+        $this->addOption(
+            self::OPTION_TARGET_VARIABLES_ONLY,
+            null,
+            InputOption::VALUE_NONE,
+            'Keep only variables from target file'
+        );
     }
 
     /**
@@ -98,6 +111,13 @@ class GenerateConfigFileCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $this->keepTargetVariablesOnly = $input->getOption(self::OPTION_TARGET_VARIABLES_ONLY);
+        $targetFile = $this->getTargetFile();
+
+        if ($this->keepTargetVariablesOnly && !$this->filesystem->exists($targetFile)) {
+            throw new InvalidArgumentException(sprintf('Target file "%s" does not exist', $targetFile));
+        }
+
         $files = $input->getOption(self::OPTION_CONFIG_FILE);
         $variables = $input->getOption(self::OPTION_CONFIG_VARIABLE);
 
@@ -110,8 +130,6 @@ class GenerateConfigFileCommand extends Command
         if (count($variables) !== count($values)) {
             throw new InvalidArgumentException('At least one config file or config variable should be specified');
         }
-
-        $targetFile = $this->getTargetFile();
 
         if ($this->filesystem->exists($targetFile)) {
             $this->parseFile($targetFile);
@@ -159,7 +177,7 @@ class GenerateConfigFileCommand extends Command
         $path = $this->getPath($path);
 
         if (!$this->filesystem->exists($path)) {
-            throw new InvalidArgumentException(sprintf('File "%s" is not exist', $originalPath));
+            throw new InvalidArgumentException(sprintf('File "%s" does not exist', $originalPath));
         }
 
         $fileData = explode(PHP_EOL, file_get_contents($path));
@@ -181,15 +199,16 @@ class GenerateConfigFileCommand extends Command
 
             list($variable, $value) = explode('=', $row, 2);
 
-            $this->setVariable($variable, $value);
+            $this->setVariable($variable, $value, $isFirstFile);
         }
     }
 
     /**
      * @param string $variable
      * @param string $value
+     * @param bool $isFirstFile
      */
-    private function setVariable(string $variable, string $value): void
+    private function setVariable(string $variable, string $value, bool $isFirstFile = false): void
     {
         if (null === $this->configsData) {
             $this->configsData = [$this->makeConfigItem($variable, $value)];
@@ -213,7 +232,9 @@ class GenerateConfigFileCommand extends Command
             }
         }
 
-        $this->configsData[] = $this->makeConfigItem($variable, $value);
+        if ($isFirstFile || !$this->keepTargetVariablesOnly) {
+            $this->configsData[] = $this->makeConfigItem($variable, $value);
+        }
     }
 
     /**
