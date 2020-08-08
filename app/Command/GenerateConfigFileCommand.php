@@ -19,7 +19,7 @@ class GenerateConfigFileCommand extends Command
     private const OPTION_CONFIG_FILE = 'file';
     private const OPTION_CONFIG_VARIABLE = 'var';
     private const OPTION_CONFIG_VALUE = 'val';
-    private const OPTION_TARGET_VARIABLES_ONLY = 'target-variables-only';
+    private const OPTION_FIRST_FILE_VARIABLES_ONLY = 'first-file-variables-only';
 
     /**
      * @var InputInterface
@@ -44,7 +44,7 @@ class GenerateConfigFileCommand extends Command
     /**
      * @var bool
      */
-    private $keepTargetVariablesOnly = false;
+    private $firstFileVariablesOnly = false;
 
     /**
      * @inheritDoc
@@ -84,10 +84,10 @@ class GenerateConfigFileCommand extends Command
         );
 
         $this->addOption(
-            self::OPTION_TARGET_VARIABLES_ONLY,
+            self::OPTION_FIRST_FILE_VARIABLES_ONLY,
             null,
             InputOption::VALUE_NONE,
-            'Keep only variables from target file'
+            'Keep only variables from first file'
         );
     }
 
@@ -111,12 +111,7 @@ class GenerateConfigFileCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->keepTargetVariablesOnly = $input->getOption(self::OPTION_TARGET_VARIABLES_ONLY);
-        $targetFile = $this->getTargetFile();
-
-        if ($this->keepTargetVariablesOnly && !$this->filesystem->exists($targetFile)) {
-            throw new InvalidArgumentException(sprintf('Target file "%s" does not exist', $targetFile));
-        }
+        $this->firstFileVariablesOnly = $input->getOption(self::OPTION_FIRST_FILE_VARIABLES_ONLY);
 
         $files = $input->getOption(self::OPTION_CONFIG_FILE);
         $variables = $input->getOption(self::OPTION_CONFIG_VARIABLE);
@@ -130,6 +125,8 @@ class GenerateConfigFileCommand extends Command
         if (count($variables) !== count($values)) {
             throw new InvalidArgumentException('At least one config file or config variable should be specified');
         }
+
+        $targetFile = $this->getTargetFile();
 
         if ($this->filesystem->exists($targetFile)) {
             $this->parseFile($targetFile);
@@ -232,7 +229,7 @@ class GenerateConfigFileCommand extends Command
             }
         }
 
-        if ($isFirstFile || !$this->keepTargetVariablesOnly) {
+        if ($isFirstFile || !$this->firstFileVariablesOnly) {
             $this->configsData[] = $this->makeConfigItem($variable, $value);
         }
     }
